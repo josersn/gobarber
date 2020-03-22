@@ -1,8 +1,18 @@
 import User from "../models/User";
+import * as Yup from "yup";
 
 class UserController {
  
     async store(req, res){
+        const schema = Yup.object().shape({
+            name: Yup.string().required(),
+            email: Yup.string().required().email(),
+            password: Yup.string().required().min(6),
+        });
+
+        if(!(await schema.isValid(req.body))){
+            res.status(401).json({error: "Validation failds"});
+        }
 
         const exist = await User.findOne({where: { email: req.body.email } });
 
@@ -15,6 +25,22 @@ class UserController {
     }
 
     async update(req, res){
+        const schema = Yup.object().shape({
+            name: Yup.string(),
+            email: Yup.string().email(),
+            oldPassword: Yup.string().min(6),
+            password: Yup.string().min(6).when("oldPassword", (oldPassword, field) => {
+                 return oldPassword ? field.required() : field
+            }),
+            confirmPassword: Yup.string().when("password", (password, field) => {
+                return password ? confirmPassword.required().oneOf([Yup.ref("password")]) : field
+            })
+        });
+
+        if(!(await schema.isValid(req.body))){
+            res.status(401).json({error: "Validation failds"});
+        }
+
         const { email, oldPassword } = req.body;
 
 
